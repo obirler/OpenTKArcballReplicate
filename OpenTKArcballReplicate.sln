@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34728.123
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenTKArcballReplicate", "OpenTKArcballReplicate\OpenTKArcballReplicate.csproj", "{86F78650-2279-45F8-86E3-CF6B99E6EF08}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Debug|x64.ActiveCfg = Debug|x64
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Debug|x64.Build.0 = Debug|x64
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Release|Any CPU.Build.0 = Release|Any CPU
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Release|x64.ActiveCfg = Release|x64
+		{86F78650-2279-45F8-86E3-CF6B99E6EF08}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {033E001E-DF46-409F-93F6-5BB3E139217F}
+	EndGlobalSection
+EndGlobal
