@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
@@ -18,8 +19,8 @@ namespace OpenTKArcballReplicate
      */
         public ArcballCamera(Vector3 eye, Vector3 center, Vector3 up, int width, int height)
         {
-            _width = width;
-            _height = height;
+            _width = width + 16;
+            _height = height + 39;
             Vector3 dir = center - eye;
             Vector3 z_axis = Vector3.Normalize(dir);
             Vector3 x_axis = Vector3.Normalize(Vector3.Cross(z_axis, up));
@@ -36,9 +37,11 @@ namespace OpenTKArcballReplicate
                 x_axis.Z, y_axis.Z, -z_axis.Z
             ));
 
+            Debug.WriteLine($"Constructing: width={_width}, height={_height}");
+
             float aspect = (float)_width / ((float)_height);
 
-            set_projection(fov, aspect, near, far);
+            //set_projection(fov, aspect, near, far);
 
             update_camera();
         }
@@ -72,6 +75,7 @@ namespace OpenTKArcballReplicate
 
         public void set_projection(float fov, float aspect, float near, float far)
         {
+            Debug.WriteLine($"projection set fov={fov}, aspect={aspect}, near={near}, far={far})");
             proj = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspect, near, far);
             proj_inv = proj.Inverted();
         }
@@ -80,6 +84,7 @@ namespace OpenTKArcballReplicate
         {
             _width = width;
             _height = height;
+            Debug.WriteLine($"Camera size set to ({_width}, {_height})");
             float aspect = (float)_width / ((float)_height);
             set_projection(fov, aspect, near, far);
         }
@@ -159,8 +164,15 @@ namespace OpenTKArcballReplicate
         private void update_camera()
         {
             Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
-            camera = translation * rotationMatrix * center_translation;
+            camera = Matrix4.Transpose(translation * rotationMatrix * center_translation);
+
+            Debug.WriteLine("camera matrix");
+            Debug.WriteLine(camera.ToString()); 
+
             inv_camera = camera.Inverted();
+
+            Debug.WriteLine("inv_camera matrix");
+            Debug.WriteLine(inv_camera.ToString());
         }
 
         private Quaternion screen_to_arcball(Vector2 point)
@@ -168,15 +180,15 @@ namespace OpenTKArcballReplicate
             float dist = Vector2.Dot(point, point);
 
             // If we're on/in the sphere return the point on it
-            if (dist < 1.0f)
+            if (dist <= 1.0f)
             {
-                return new Quaternion(0.0f, point.X, point.Y, MathF.Sqrt(1.0f - dist));
+                return new Quaternion(point.X, point.Y, MathF.Sqrt(1.0f - dist), 0.0f);
             }
             else
             {
                 // otherwise we project the point onto the sphere
                 Vector2 proj = Vector2.Normalize(point);
-                return new Quaternion(0.0f, proj.X, proj.Y, 0.0f);
+                return new Quaternion(proj.X, proj.Y, 0.0f, 0.0f);
             }
         }
     }

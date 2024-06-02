@@ -71,8 +71,9 @@ namespace OpenTKArcballReplicate
 
         protected override void OnLoad()
         {
-            GL.ClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+            GL.ClearColor(0.6f, 0.6f, 0.6f, 1.0f);
             GL.Enable(EnableCap.DepthTest);
+            GL.Enable(EnableCap.CullFace);
 
             GL.DebugMessageCallback(DebugMessageDelegate, IntPtr.Zero);
             GL.Enable(EnableCap.DebugOutput);
@@ -99,21 +100,35 @@ namespace OpenTKArcballReplicate
             _camera = new ArcballCamera(new Vector3(0, 0, 5), Vector3.Zero, Vector3.UnitY, _width, _height);
 
             _draw_size = (int)(_vertices.Length / 3.0);
+
+            test();
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
 
+            //test();
+
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             GL.UseProgram(_shaderProgram);
 
             // Use shaders and draw objects here...
 
-            var projection = _camera.projection();
-            var transform = _camera.transform();
+            var projection = Matrix4.Transpose(_camera.projection());
+            //var projection = _camera.projection();
+            //Debug.WriteLine("projection matrix");
+            //Debug.WriteLine(projection.ToString());
+
+            var transform = Matrix4.Transpose(_camera.transform());
+            //var transform = _camera.transform();
+            //Debug.WriteLine("transform matrix");
+            //Debug.WriteLine(transform.ToString());
 
             var projview = projection * transform;
+
+            //Debug.WriteLine("final matrix");
+            //Debug.WriteLine(projview.ToString());
             // Pass transform matrix to shader here...
 
             GL.UniformMatrix4(_projviewLocation, false, ref projview);
@@ -129,6 +144,7 @@ namespace OpenTKArcballReplicate
             base.OnResize(e);
             _width = Size.X;
             _height = Size.Y;
+            Debug.WriteLine($"Size set to ({_width}, {_height})");
             GL.Viewport(0, 0, _width, _height);
             _camera.resize(_width, _height);
         }
@@ -136,13 +152,15 @@ namespace OpenTKArcballReplicate
         protected override void OnMouseMove(MouseMoveEventArgs e)
         {
             base.OnMouseMove(e);
-
+           
             Vector2 cur_mouse = transform_mouse(e.X, e.Y);
 
             if (prev_mouse.X != -2f)
             {
                 if (mouse_left)
                 {
+                    Debug.WriteLine($"Mouse move for rotate: ({e.X}, {e.Y})");
+                    Debug.WriteLine($"Transformed pos: ({cur_mouse.X}, {cur_mouse.Y})");
                     _camera.rotate(prev_mouse, cur_mouse);
                 }
                 else if(mouse_right)
@@ -230,6 +248,27 @@ namespace OpenTKArcballReplicate
             return new Vector2(xposIn * 2f / Size.X - 1f, 1f - 2f * yposIn / Size.X);
         }
 
+        private void test()
+        {
+            var test_prev_mouse = new Vector2(-0.29f, 0.635f);
+            var test_cur_mouse = new Vector2(-0.2875f, 0.635f);
+            _camera.rotate(test_prev_mouse, test_cur_mouse);
+
+            var projection = Matrix4.Transpose(_camera.projection());
+            //var projection = _camera.projection();
+            //Debug.WriteLine("projection matrix");
+            //Debug.WriteLine(projection.ToString());
+
+            var transform = Matrix4.Transpose(_camera.transform());
+            //var transform = _camera.transform();
+            //Debug.WriteLine("transform matrix");
+            //Debug.WriteLine(transform.ToString());
+
+            var final_mat = projection * transform;
+            Debug.WriteLine("final");
+            Debug.WriteLine(final_mat.ToString());
+        }
+
         private static void OpenGLDebugMessage(DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr pMessage, IntPtr pUserParam)
         {
             var message = Marshal.PtrToStringAnsi(pMessage, length);
@@ -241,7 +280,7 @@ namespace OpenTKArcballReplicate
         {
             var nativeWindowSettings = new NativeWindowSettings()
             {
-                ClientSize = new Vector2i(800, 600),
+                ClientSize = new Vector2i(800 -16, 600 - 39),
                 Title = "LearnOpenTK - Creating a Window",
                 // This is needed to run on macos
                 Flags = ContextFlags.ForwardCompatible,
