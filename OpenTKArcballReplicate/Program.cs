@@ -25,9 +25,10 @@ namespace OpenTKArcballReplicate
         private static int _height;
 
         private int _shaderProgram;
-        private int _vertexArray;
-        private int _vertexBuffer;
-        private int _indexBuffer;
+
+        private int _vertexArrayObject;
+
+        private int _vertexBufferObject;
 
         private int _projviewLocation;
 
@@ -42,38 +43,55 @@ namespace OpenTKArcballReplicate
         private static DebugProc DebugMessageDelegate = OpenGLDebugMessage;
 
         private readonly float[] _vertices = {
-            // Front face
-            -1.0f, -1.0f,  1.0f,
-             1.0f, -1.0f,  1.0f,
-             1.0f,  1.0f,  1.0f,
-            -1.0f,  1.0f,  1.0f,
-            // Back face
-            -1.0f, -1.0f, -1.0f,
-             1.0f, -1.0f, -1.0f,
-             1.0f,  1.0f, -1.0f,
-            -1.0f,  1.0f, -1.0f,
-        };
-
-        private readonly uint[] _indices = {
-            // Front face
-            0, 1, 2, 2, 3, 0,
-            // Top face
-            3, 2, 6, 6, 7, 3,
-            // Back face
-            7, 6, 5, 5, 4, 7,
-            // Bottom face
-            4, 5, 1, 1, 0, 4,
-            // Left face
-            4, 0, 3, 3, 7, 4,
-            // Right face
-            1, 5, 6, 6, 2, 1,
+            // Upper (+z) face    // Color red
+            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+             1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+             1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+             1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+            // Front (+y) face    // Color green
+             1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            -1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            -1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
+            -1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+            // Left (+x) face     // Color blue
+             1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+             1.0f,  1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+             1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+             1.0f,  1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
+             1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+             1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+            // Lower (-z) face    // Color yellow
+            -1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+             1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+             1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+            -1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+             1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+            -1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+            // Back (-y) face    // Color aqua
+            -1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+            -1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
+             1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+            -1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+            // Right (-x) face    // Color maroon
+            -1.0f,  1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
         };
 
         protected override void OnLoad()
         {
             GL.ClearColor(0.6f, 0.6f, 0.6f, 1.0f);
             GL.Enable(EnableCap.DepthTest);
-            GL.Enable(EnableCap.CullFace);
+            //GL.Enable(EnableCap.CullFace);
 
             GL.DebugMessageCallback(DebugMessageDelegate, IntPtr.Zero);
             GL.Enable(EnableCap.DebugOutput);
@@ -81,19 +99,20 @@ namespace OpenTKArcballReplicate
             _shaderProgram = CreateShaderProgram("main.vert", "main.frag");
             GL.UseProgram(_shaderProgram);
 
-            _vertexArray = GL.GenVertexArray();
-            GL.BindVertexArray(_vertexArray);
+            _vertexArrayObject = GL.GenVertexArray();
+            GL.BindVertexArray(_vertexArrayObject);
             
-            _vertexBuffer = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBuffer);
+            _vertexBufferObject = GL.GenBuffer();
+            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
             GL.BufferData(BufferTarget.ArrayBuffer, _vertices.Length * sizeof(float), _vertices, BufferUsageHint.StaticDraw);
 
-            _indexBuffer = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _indexBuffer);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
-
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
+            // position attribute
             GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+
+            //color attribute
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
 
             _projviewLocation = GL.GetUniformLocation(_shaderProgram, "proj_view");
 
@@ -101,7 +120,11 @@ namespace OpenTKArcballReplicate
 
             _draw_size = (int)(_vertices.Length / 3.0);
 
-            test();
+            Logger.WriteLine("projection matrix");
+            Logger.WriteLine(_camera.projection().ToString());
+
+            //test();
+            //test3();
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
@@ -115,26 +138,26 @@ namespace OpenTKArcballReplicate
 
             // Use shaders and draw objects here...
 
-            var projection = Matrix4.Transpose(_camera.projection());
+            var projection = _camera.projection();
             //var projection = _camera.projection();
-            //Debug.WriteLine("projection matrix");
-            //Debug.WriteLine(projection.ToString());
+            //Logger.WriteLine("projection matrix");
+            //Logger.WriteLine(projection.ToString());
 
-            var transform = Matrix4.Transpose(_camera.transform());
+            var transform = _camera.transform();
             //var transform = _camera.transform();
-            //Debug.WriteLine("transform matrix");
-            //Debug.WriteLine(transform.ToString());
+            //Logger.WriteLine("transform matrix");
+            //Logger.WriteLine(transform.ToString());
 
             var projview = projection * transform;
 
-            //Debug.WriteLine("final matrix");
-            //Debug.WriteLine(projview.ToString());
+            //Logger.WriteLine("final matrix");
+            //Logger.WriteLine(projview.ToString());
             // Pass transform matrix to shader here...
 
             GL.UniformMatrix4(_projviewLocation, false, ref projview);
 
-            GL.BindVertexArray(_vertexArray);
-            GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);
+            GL.BindVertexArray(_vertexArrayObject);
+            GL.DrawArrays(PrimitiveType.Triangles, 0, _draw_size);
 
             SwapBuffers();
         }
@@ -144,7 +167,7 @@ namespace OpenTKArcballReplicate
             base.OnResize(e);
             _width = Size.X;
             _height = Size.Y;
-            Debug.WriteLine($"Size set to ({_width}, {_height})");
+            Logger.WriteLine($"Size set to ({_width}, {_height})");
             GL.Viewport(0, 0, _width, _height);
             _camera.resize(_width, _height);
         }
@@ -159,8 +182,8 @@ namespace OpenTKArcballReplicate
             {
                 if (mouse_left)
                 {
-                    Debug.WriteLine($"Mouse move for rotate: ({e.X}, {e.Y})");
-                    Debug.WriteLine($"Transformed pos: ({cur_mouse.X}, {cur_mouse.Y})");
+                    Logger.WriteLine($"Mouse move for rotate: ({e.X}, {e.Y})");
+                    Logger.WriteLine($"Transformed pos: ({cur_mouse.X}, {cur_mouse.Y})");
                     _camera.rotate(prev_mouse, cur_mouse);
                 }
                 else if(mouse_right)
@@ -250,29 +273,74 @@ namespace OpenTKArcballReplicate
 
         private void test()
         {
+            Logger.WriteLine("test method called");
+
             var test_prev_mouse = new Vector2(-0.29f, 0.635f);
             var test_cur_mouse = new Vector2(-0.2875f, 0.635f);
             _camera.rotate(test_prev_mouse, test_cur_mouse);
 
-            var projection = Matrix4.Transpose(_camera.projection());
+            var projection = _camera.projection();
             //var projection = _camera.projection();
-            //Debug.WriteLine("projection matrix");
-            //Debug.WriteLine(projection.ToString());
+            Logger.WriteLine("projection matrix");
+            Logger.WriteLine(projection.ToString());
 
-            var transform = Matrix4.Transpose(_camera.transform());
+            var transform = _camera.transform();
             //var transform = _camera.transform();
-            //Debug.WriteLine("transform matrix");
-            //Debug.WriteLine(transform.ToString());
+            Logger.WriteLine("transform matrix");
+            Logger.WriteLine(transform.ToString());
 
             var final_mat = projection * transform;
-            Debug.WriteLine("final");
-            Debug.WriteLine(final_mat.ToString());
+            Logger.WriteLine("final matrix");
+            Logger.WriteLine(final_mat.ToString());
+        }
+
+        private void test3()
+        {
+            Logger.WriteLine("test3 method called");
+
+            var test_prev_mouse = new Vector2(-0.29f, 0.635f);
+            var test_cur_mouse = new Vector2(-0.2875f, 0.635f);
+
+            Logger.WriteLine("test3 rotation1");
+            _camera.rotate(test_prev_mouse, test_cur_mouse);
+            test_prev_mouse = test_cur_mouse;
+            test_cur_mouse = new Vector2(-0.3f, 0.7f);
+
+            Logger.WriteLine("test3 rotation2");
+            _camera.rotate(test_prev_mouse, test_cur_mouse);
+            test_prev_mouse = test_cur_mouse;
+            test_cur_mouse = new Vector2(-0.4f, 0.71f);
+
+            Logger.WriteLine("test3 rotation3");
+            _camera.rotate(test_prev_mouse, test_cur_mouse);
+
+            Logger.WriteLine("test3 zoom1");
+            _camera.zoom(-1.0f);
+
+            Logger.WriteLine("test3 pan1");
+            Vector2 mouse_delta = new Vector2(0.05f, 0.1f);
+            _camera.pan(mouse_delta);
+
+
+            var projection = _camera.projection();
+            //var projection = _camera.projection();
+            Logger.WriteLine("projection matrix");
+            Logger.WriteLine(projection.ToString());
+
+            var transform = _camera.transform();
+            //var transform = _camera.transform();
+            Logger.WriteLine("transform matrix");
+            Logger.WriteLine(transform.ToString());
+
+            var final_mat = projection * transform;
+            Logger.WriteLine("final matrix");
+            Logger.WriteLine(final_mat.ToString());
         }
 
         private static void OpenGLDebugMessage(DebugSource source, DebugType type, int id, DebugSeverity severity, int length, IntPtr pMessage, IntPtr pUserParam)
         {
             var message = Marshal.PtrToStringAnsi(pMessage, length);
-            Console.WriteLine($"[{severity} source={source} type={type} id={id}] {message}");
+            Logger.WriteLine($"[{severity} source={source} type={type} id={id}] {message}");
         }
 
         [STAThread]

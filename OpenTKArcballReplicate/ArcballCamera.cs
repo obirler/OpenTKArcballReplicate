@@ -21,6 +21,9 @@ namespace OpenTKArcballReplicate
         {
             _width = width + 16;
             _height = height + 39;
+
+            Logger.WriteLine($"constructing: width={_width}, height={_height}");
+
             Vector3 dir = center - eye;
             Vector3 z_axis = Vector3.Normalize(dir);
             Vector3 x_axis = Vector3.Normalize(Vector3.Cross(z_axis, up));
@@ -28,7 +31,12 @@ namespace OpenTKArcballReplicate
             x_axis = Vector3.Normalize(Vector3.Cross(z_axis, y_axis));
 
             center_translation = Matrix4.CreateTranslation(center).Inverted();
-            translation = Matrix4.CreateTranslation(0, 0, -dir.Length);
+            Logger.WriteLine("center translation matrix");
+            Logger.WriteLine(center_translation.ToString());
+
+            translation = Matrix4.Transpose(Matrix4.CreateTranslation(0, 0, -dir.Length));
+            Logger.WriteLine("translation matrix");
+            Logger.WriteLine(translation.ToString());
 
             // Create the initial rotation quaternion from the axis vectors
             rotation = Quaternion.FromMatrix(new Matrix3(
@@ -36,12 +44,11 @@ namespace OpenTKArcballReplicate
                 x_axis.Y, y_axis.Y, -z_axis.Y,
                 x_axis.Z, y_axis.Z, -z_axis.Z
             ));
-
-            Debug.WriteLine($"Constructing: width={_width}, height={_height}");
+            
 
             float aspect = (float)_width / ((float)_height);
 
-            //set_projection(fov, aspect, near, far);
+            set_projection(fov, aspect, near, far);
 
             update_camera();
         }
@@ -75,8 +82,8 @@ namespace OpenTKArcballReplicate
 
         public void set_projection(float fov, float aspect, float near, float far)
         {
-            Debug.WriteLine($"projection set fov={fov}, aspect={aspect}, near={near}, far={far})");
-            proj = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspect, near, far);
+            Logger.WriteLine($"projection set fov={fov}, aspect={aspect}, near={near}, far={far})");
+            proj = Matrix4.Transpose(Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspect, near, far));
             proj_inv = proj.Inverted();
         }
 
@@ -84,7 +91,7 @@ namespace OpenTKArcballReplicate
         {
             _width = width;
             _height = height;
-            Debug.WriteLine($"Camera size set to ({_width}, {_height})");
+            Logger.WriteLine($"Camera size set to ({_width}, {_height})");
             float aspect = (float)_width / ((float)_height);
             set_projection(fov, aspect, near, far);
         }
@@ -92,6 +99,7 @@ namespace OpenTKArcballReplicate
         public void rotate(Vector2 prev_mouse, Vector2 cur_mouse)
         {
             // Clamp mouse positions to stay in NDC
+            Logger.WriteLine($"rotate called: prev_mouse:({prev_mouse.X}, {prev_mouse.Y}), cur_mouse:({cur_mouse.X}, {cur_mouse.Y})");
             cur_mouse = Vector2.Clamp(cur_mouse, new Vector2(-1, -1), new Vector2(1, 1));
             prev_mouse = Vector2.Clamp(prev_mouse, new Vector2(-1, -1), new Vector2(1, 1));
 
@@ -99,27 +107,62 @@ namespace OpenTKArcballReplicate
             Quaternion mouse_cur_ball = screen_to_arcball(cur_mouse);
             Quaternion mouse_prev_ball = screen_to_arcball(prev_mouse);
 
+            Logger.WriteLine("mouse_cur_ball");
+            Logger.WriteLine(mouse_cur_ball.ToString());
+
+            Logger.WriteLine("mouse_prev_ball");
+            Logger.WriteLine(mouse_prev_ball.ToString());
+
             // Update rotation
             rotation = mouse_cur_ball * mouse_prev_ball * rotation;
+
+            Logger.WriteLine("rotation");
+            Logger.WriteLine(rotation.ToString());
+
             update_camera();
         }
 
         public void pan(Vector2 mouse_delta)
         {
-            float zoom_amount = Math.Abs(translation.M32);
+            Logger.WriteLine($"panning: ({mouse_delta.X}, {mouse_delta.Y})");
+            Logger.WriteLine("translation matrix");
+            Logger.WriteLine(translation.ToString());
+
+            //Unlike the original, we take m34 probably because of it is transposed
+            float zoom_amount = Math.Abs(translation.M34);
+            Logger.WriteLine($"zoom amount= {zoom_amount}");
             Vector4 motion = new Vector4(mouse_delta.X * zoom_amount, mouse_delta.Y * zoom_amount, 0f, 0f);
 
             // Find the panning amount in the world space
             motion = inv_camera * motion;
+            Logger.WriteLine("motion vec4");
+            Logger.WriteLine(motion.ToString());
 
-            center_translation = Matrix4.CreateTranslation(motion.Xyz) * center_translation;
+            Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(motion.Xyz));
+            Logger.WriteLine("motion_trans matrix");
+            Logger.WriteLine(motion_trans.ToString());
+
+            center_translation = motion_trans * center_translation;
+
+            Logger.WriteLine("center_translation matrix");
+            Logger.WriteLine(center_translation.ToString());
+
             update_camera();
         }
 
         public void zoom(float zoom_amount)
         {
+            Logger.WriteLine($"zooming: {zoom_amount}");
             Vector3 motion = new Vector3(0f, 0f, zoom_amount);
-            translation = Matrix4.CreateTranslation(motion) * translation;
+
+            Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(motion));
+            Logger.WriteLine("motion_trans matrix");
+            Logger.WriteLine(motion_trans.ToString());
+
+            translation = motion_trans * translation;
+            Logger.WriteLine("translation");
+            Logger.WriteLine(translation.ToString());
+
             update_camera();
         }
 
@@ -163,16 +206,31 @@ namespace OpenTKArcballReplicate
 
         private void update_camera()
         {
-            Matrix4 rotationMatrix = Matrix4.CreateFromQuaternion(rotation);
-            camera = Matrix4.Transpose(translation * rotationMatrix * center_translation);
+            Logger.WriteLine("uptate_camera called");
+            Matrix4 rotation_mat = Matrix4.Transpose(Matrix4.CreateFromQuaternion(rotation));
 
-            Debug.WriteLine("camera matrix");
-            Debug.WriteLine(camera.ToString()); 
+            Logger.WriteLine("translation matrix");
+            Logger.WriteLine(translation.ToString());
+
+            Logger.WriteLine("rotation_mat matrix");
+            Logger.WriteLine(rotation_mat.ToString());
+
+            Logger.WriteLine("center_translation matrix");
+            Logger.WriteLine(center_translation.ToString());
+
+            //Matrix4 mat1 = translation * rotation_mat;
+            //Logger.WriteLine("mat1 matrix");
+            //Logger.WriteLine(mat1.ToString());
+
+            camera = translation * rotation_mat * center_translation;
+
+            Logger.WriteLine("camera matrix");
+            Logger.WriteLine(camera.ToString()); 
 
             inv_camera = camera.Inverted();
 
-            Debug.WriteLine("inv_camera matrix");
-            Debug.WriteLine(inv_camera.ToString());
+            Logger.WriteLine("inv_camera matrix");
+            Logger.WriteLine(inv_camera.ToString());
         }
 
         private Quaternion screen_to_arcball(Vector2 point)
