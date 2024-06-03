@@ -13,4 +13,8 @@
     <PackageReference Include="OpenTK" Version="4.8.2" />
   </ItemGroup>
 
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="call ../hw.bat" />
+  </Target>
+
 </Project>
