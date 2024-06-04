@@ -229,6 +229,18 @@ namespace OpenTKArcballReplicate
             _camera.zoom(e.OffsetY * 0.1f);
         }
 
+        protected override void OnKeyDown(KeyboardKeyEventArgs e)
+        {
+            if (e.Key == Keys.O)
+            {
+                _camera.set_projection_mode(ProjectionMode.Orthogonal);
+            }
+            else if(e.Key == Keys.P)
+            {
+                _camera.set_projection_mode(ProjectionMode.Perspective);
+            }
+        }
+
         private int CreateShaderProgram(string vertexPath, string fragmentPath)
         {
             int vertexShader = CompileShader(ShaderType.VertexShader, File.ReadAllText(vertexPath));

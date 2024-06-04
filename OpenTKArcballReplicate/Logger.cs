@@ -21,7 +21,7 @@ namespace OpenTKArcballReplicate
             }
         }
 
-        public static bool WriteConsole = false;
+        public static bool WriteConsole = true;
 
         public static bool WriteDebug = false;
     }

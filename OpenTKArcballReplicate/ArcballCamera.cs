@@ -80,10 +80,27 @@ namespace OpenTKArcballReplicate
 
         private float far = 100.0f;
 
+        private ProjectionMode _projectionMode = ProjectionMode.Orthogonal;
+
+        private float _ortho_scale = 5.0f;
+
         public void set_projection(float fov, float aspect, float near, float far)
         {
             Logger.WriteLine($"projection set fov={fov}, aspect={aspect}, near={near}, far={far})");
-            proj = Matrix4.Transpose(Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspect, near, far));
+
+            switch (_projectionMode)
+            {
+                case ProjectionMode.Perspective:
+                    proj = Matrix4.Transpose(Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(fov), aspect, near, far));
+                    break;
+
+                case ProjectionMode.Orthogonal:
+                    float ortho_width = _ortho_scale * aspect;
+                    proj = Matrix4.Transpose(Matrix4.CreateOrthographic(ortho_width, _ortho_scale, near, far));
+                    break;
+            }
+
+            
             proj_inv = proj.Inverted();
         }
 
@@ -94,6 +111,37 @@ namespace OpenTKArcballReplicate
             Logger.WriteLine($"Camera size set to ({_width}, {_height})");
             float aspect = (float)_width / ((float)_height);
             set_projection(fov, aspect, near, far);
+        }
+
+        public void set_projection_mode(ProjectionMode mode)
+        {
+            if (_projectionMode == mode)
+            {
+                // No change, so no need to update
+                return;
+            }
+                
+            _projectionMode = mode;
+            float aspect = ((float)_width) / ((float)_height);
+
+            switch (_projectionMode)
+            {
+                case ProjectionMode.Perspective:
+                    // When switching to perspective, we need to adjust the FOV
+                    // to maintain the same zoom level as the current orthographic scale
+                    float newFov = MathHelper.RadiansToDegrees(2.0f * MathF.Atan(1.0f / _ortho_scale));
+                    fov = newFov;
+                    set_projection(fov, aspect, near, far);
+                    break;
+
+                case ProjectionMode.Orthogonal:
+                    // When switching to orthogonal, we need to adjust the orthographic
+                    // scale to maintain the same zoom level as the current FOV
+                    float currentFov = MathHelper.DegreesToRadians(fov);
+                    _ortho_scale = 1.0f / MathF.Tan(0.5f * currentFov);
+                    set_projection(fov, aspect, near, far);
+                    break;
+            }
         }
 
         public void rotate(Vector2 prev_mouse, Vector2 cur_mouse)
@@ -153,15 +201,25 @@ namespace OpenTKArcballReplicate
         public void zoom(float zoom_amount)
         {
             Logger.WriteLine($"zooming: {zoom_amount}");
-            Vector3 motion = new Vector3(0f, 0f, zoom_amount);
+            switch (_projectionMode)
+            {
+                case ProjectionMode.Perspective:
+                    Vector3 motion = new Vector3(0f, 0f, zoom_amount);
+                    Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(motion));
+                    Logger.WriteLine("motion_trans matrix");
+                    Logger.WriteLine(motion_trans.ToString());
 
-            Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(motion));
-            Logger.WriteLine("motion_trans matrix");
-            Logger.WriteLine(motion_trans.ToString());
+                    translation = motion_trans * translation;
+                    Logger.WriteLine("translation");
+                    Logger.WriteLine(translation.ToString());
+                    break;
 
-            translation = motion_trans * translation;
-            Logger.WriteLine("translation");
-            Logger.WriteLine(translation.ToString());
+                case ProjectionMode.Orthogonal:
+                    _ortho_scale -= zoom_amount;
+                    set_projection(fov, ((float)_width) / ((float)_height), near, far);
+                    break;
+            }
+
 
             update_camera();
         }

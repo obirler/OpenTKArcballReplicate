@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="call ../hw.bat" />
+    <Exec Command="xcopy /s /y Shaders\* $(OutDir)Shaders\" />
   </Target>
 
 </Project>
