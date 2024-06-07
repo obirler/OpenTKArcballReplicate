@@ -5,6 +5,7 @@ using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Security.AccessControl;
 
 namespace OpenTKArcballReplicate
 {
@@ -17,11 +18,13 @@ namespace OpenTKArcballReplicate
             prev_mouse = new Vector2(-2f, -2f);
             _width = nativeWindowSettings.ClientSize.X;
             _height = nativeWindowSettings.ClientSize.Y;
+            read_model();
         }
 
         private static ArcballCamera _camera;
 
         private static int _width;
+
         private static int _height;
 
         private int _shaderProgram;
@@ -31,6 +34,8 @@ namespace OpenTKArcballReplicate
         private int _vertexBufferObject;
 
         private int _projviewLocation;
+
+        private int _fractionLocation;
 
         private int _draw_size;
 
@@ -42,50 +47,70 @@ namespace OpenTKArcballReplicate
 
         private static DebugProc DebugMessageDelegate = OpenGLDebugMessage;
 
-        private readonly float[] _vertices = {
+        private float[] _vertices = {
             // Upper (+z) face    // Color red
-            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-             1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-             1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-             1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
-            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 0.0f,
+             0.0f, -5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
+            20.0f, -5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
+            20.0f,  5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
+             0.0f, -5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
+            20.0f,  5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
+             0.0f,  5.0f, 10.0f,  1.0f, 0.0f, 0.0f,
             // Front (+y) face    // Color green
-             1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-             1.0f,  1.0f, -1.0f,  0.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
-             1.0f,  1.0f,  1.0f,  0.0f, 1.0f, 0.0f,
+             0.0f,  5.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+             0.0f,  5.0f, 10.0f,  0.0f, 1.0f, 0.0f,
+            20.0f,  5.0f, 10.0f,  0.0f, 1.0f, 0.0f,
+             0.0f,  5.0f,  0.0f,  0.0f, 1.0f, 0.0f,
+            20.0f,  5.0f, 10.0f,  0.0f, 1.0f, 0.0f,
+            20.0f,  5.0f,  0.0f,  0.0f, 1.0f, 0.0f,
             // Left (+x) face     // Color blue
-             1.0f, -1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-             1.0f,  1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-             1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-             1.0f,  1.0f, -1.0f,  0.0f, 0.0f, 1.0f,
-             1.0f,  1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
-             1.0f, -1.0f,  1.0f,  0.0f, 0.0f, 1.0f,
+            20.0f, -5.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+            20.0f,  5.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+            20.0f, -5.0f, 10.0f,  0.0f, 0.0f, 1.0f,
+            20.0f,  5.0f,  0.0f,  0.0f, 0.0f, 1.0f,
+            20.0f,  5.0f, 10.0f,  0.0f, 0.0f, 1.0f,
+            20.0f, -5.0f, 10.0f,  0.0f, 0.0f, 1.0f,
             // Lower (-z) face    // Color yellow
-            -1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-             1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-             1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-            -1.0f,  1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-             1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
-            -1.0f, -1.0f, -1.0f,  1.0f, 1.0f, 0.0f,
+             0.0f, -5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+             0.0f,  5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+            20.0f,  5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+            20.0f,  5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+            20.0f, -5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
+             0.0f, -5.0f,  0.0f,  1.0f, 1.0f, 0.0f,
             // Back (-y) face    // Color aqua
-            -1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-            -1.0f, -1.0f, -1.0f,  0.0f, 1.0f, 1.0f,
-             1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
-            -1.0f, -1.0f,  1.0f,  0.0f, 1.0f, 1.0f,
+             0.0f, -5.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+            20.0f, -5.0f,  0.0f,  0.0f, 1.0f, 1.0f,
+            20.0f, -5.0f, 10.0f,  0.0f, 1.0f, 1.0f,
+            20.0f, -5.0f, 10.0f,  0.0f, 1.0f, 1.0f,
+             0.0f, -5.0f, 10.0f,  0.0f, 1.0f, 1.0f,
+             0.0f, -5.0f,  0.0f,  0.0f, 1.0f, 1.0f,
             // Right (-x) face    // Color maroon
-            -1.0f,  1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f, -1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f, -1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
-            -1.0f,  1.0f,  1.0f,  1.0f, 0.0f, 1.0f,
+             0.0f, -5.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+             0.0f, -5.0f, 10.0f,  1.0f, 0.0f, 1.0f,
+             0.0f,  5.0f, 10.0f,  1.0f, 0.0f, 1.0f,
+             0.0f,  5.0f, 10.0f,  1.0f, 0.0f, 1.0f,
+             0.0f,  5.0f,  0.0f,  1.0f, 0.0f, 1.0f,
+             0.0f, -5.0f,  0.0f,  1.0f, 0.0f, 1.0f,
         };
+
+        private BoundingBox _bbox;
+
+        private bool _animation_active = false;
+
+        private bool _reverse;
+
+        private float _fraction_left;
+
+        private float _fraction = 0.01f;
+
+        private float _fraction_time_left = 2f;
+
+        private float _delta_time;
+
+        private float _fraction_speed;
+
+        private float _step_fraction;
+
+        private float _half_cycle_time = 1f;
 
         protected override void OnLoad()
         {
@@ -96,7 +121,7 @@ namespace OpenTKArcballReplicate
             GL.DebugMessageCallback(DebugMessageDelegate, IntPtr.Zero);
             GL.Enable(EnableCap.DebugOutput);
 
-            _shaderProgram = CreateShaderProgram("main.vert", "main.frag");
+            _shaderProgram = CreateShaderProgram(@"Shaders/main.vert", @"Shaders/main.frag");
             GL.UseProgram(_shaderProgram);
 
             _vertexArrayObject = GL.GenVertexArray();
@@ -108,15 +133,35 @@ namespace OpenTKArcballReplicate
 
             // position attribute
             GL.EnableVertexAttribArray(0);
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 9 * sizeof(float), 0);
+
+            //displacement attribute
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 9 * sizeof(float), 3 * sizeof(float));
 
             //color attribute
-            GL.EnableVertexAttribArray(1);
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, 6 * sizeof(float), 3 * sizeof(float));
+            GL.EnableVertexAttribArray(2);
+            GL.VertexAttribPointer(2, 3, VertexAttribPointerType.Float, false, 9 * sizeof(float), 6 * sizeof(float));
 
             _projviewLocation = GL.GetUniformLocation(_shaderProgram, "proj_view");
+            _fractionLocation = GL.GetUniformLocation(_shaderProgram, "frameFrac");
 
-            _camera = new ArcballCamera(new Vector3(0, 0, 5), Vector3.Zero, Vector3.UnitY, _width, _height);
+            /*
+            var eye = new Vector3(24.1421356f, -14.1421356f, 19.1421356f);
+            var center = new Vector3(10f, 0f, 5f);
+            var up_vec = Vector3.UnitY;
+            _camera = new ArcballCamera(eye, center, up_vec, _width, _height);*/
+            var center = new Vector3(0f, 0f, 0f);
+            //var center = new Vector3(0f, 0f, 0f);
+
+            var diag = _bbox.DiagonalLength();
+
+            var eye_pos = new Vector3(diag/1000f, 0f, diag);
+            //var eye_pos = new Vector3(new Vector3(24.1421356f, -14.1421356f, 19.1421356f));
+
+            var up_vec = new Vector3(0f, 0f, 1f);
+
+            _camera = new ArcballCamera(eye_pos, center, up_vec, _width, _height);
 
             _draw_size = (int)(_vertices.Length / 3.0);
 
@@ -125,11 +170,19 @@ namespace OpenTKArcballReplicate
 
             //test();
             //test3();
+            _animation_active = true;
         }
 
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
+
+            if (!_animation_active || _camera == null)
+            {
+                return;
+            }
+
+            _delta_time = Convert.ToSingle(e.Time);
 
             //test();
 
@@ -155,9 +208,51 @@ namespace OpenTKArcballReplicate
             // Pass transform matrix to shader here...
 
             GL.UniformMatrix4(_projviewLocation, false, ref projview);
+            GL.Uniform1(_fractionLocation, _fraction * 5.0f);
 
             GL.BindVertexArray(_vertexArrayObject);
             GL.DrawArrays(PrimitiveType.Triangles, 0, _draw_size);
+
+            if (_animation_active)
+            {
+                bool reverse = this._reverse;
+                if (reverse)
+                {
+                    this._fraction_left = this._fraction;
+                    ref float ptr = ref this._fraction_time_left;
+                    this._fraction_time_left = ptr - this._delta_time;
+                    this._fraction_speed = this._fraction_left / this._fraction_time_left;
+                    this._step_fraction = this._delta_time * this._fraction_speed;
+                    ptr = ref this._fraction;
+                    this._fraction = ptr - this._step_fraction;
+                    bool flag2 = this._fraction <= 0f || this._fraction_time_left <= 0f;
+                    bool flag5 = flag2;
+                    if (flag5)
+                    {
+                        this._fraction = 0f;
+                        this._reverse = false;
+                        this._fraction_time_left = this._half_cycle_time;
+                    }
+                }
+                else
+                {
+                    this._fraction_left = 1f - this._fraction;
+                    ref float ptr = ref this._fraction_time_left;
+                    this._fraction_time_left = ptr - this._delta_time;
+                    this._fraction_speed = this._fraction_left / this._fraction_time_left;
+                    this._step_fraction = this._delta_time * this._fraction_speed;
+                    ptr = ref this._fraction;
+                    this._fraction = ptr + this._step_fraction;
+                    bool flag3 = this._fraction >= 1f || this._fraction_time_left <= 0f;
+                    bool flag6 = flag3;
+                    if (flag6)
+                    {
+                        this._fraction = 1f;
+                        this._reverse = true;
+                        this._fraction_time_left = this._half_cycle_time;
+                    }
+                }
+            }
 
             SwapBuffers();
         }
@@ -355,12 +450,78 @@ namespace OpenTKArcballReplicate
             Logger.WriteLine($"[{severity} source={source} type={type} id={id}] {message}");
         }
 
+        private void read_model()
+        {
+            var vert_list = new List<float>();
+
+            _bbox = new BoundingBox();
+
+            using (var str = new StreamReader("geometry.txt"))
+            {
+                while(str.Peek() >= 0)
+                {
+                    var xval = Convert.ToSingle(str.ReadLine()) * 1f;
+                    var yval = Convert.ToSingle(str.ReadLine()) * 1f;
+                    var zval = Convert.ToSingle(str.ReadLine()) * 1f;
+                    var dxval = Convert.ToSingle(str.ReadLine());
+                    var dyval = Convert.ToSingle(str.ReadLine());
+                    var dzval = Convert.ToSingle(str.ReadLine());
+                    var rval = Convert.ToSingle(str.ReadLine());
+                    var gval = Convert.ToSingle(str.ReadLine());
+                    var bval = Convert.ToSingle(str.ReadLine());
+
+                    _bbox.Expand(xval, yval, zval);
+
+                    vert_list.Add(xval);
+                    vert_list.Add(yval);
+                    vert_list.Add(zval);
+                    vert_list.Add(dxval);
+                    vert_list.Add(dyval);
+                    vert_list.Add(dzval);
+                    vert_list.Add(rval);
+                    vert_list.Add(gval);
+                    vert_list.Add(bval);
+                }
+                
+            }
+
+            var middle = _bbox.Middle;
+            var xoffset = middle.X;
+            var yoffset = middle.Y;
+            var zoffset = middle.Z;
+
+            _vertices = new float[vert_list.Count];
+            int counter = 0;
+            for (int i = 0; i < vert_list.Count / 9; i++)
+            {
+                _vertices[counter] = vert_list[counter] - xoffset;
+                counter++;
+                _vertices[counter] = vert_list[counter] - yoffset;
+                counter++;
+                _vertices[counter] = vert_list[counter] - zoffset;
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+                _vertices[counter] = vert_list[counter];
+                counter++;
+            }
+            //_vertices = vert_list.ToArray();
+        }
+
         [STAThread]
         public static void Main(string[] args)
         {
             var nativeWindowSettings = new NativeWindowSettings()
             {
-                ClientSize = new Vector2i(800 -16, 600 - 39),
+                ClientSize = new Vector2i(1525 -16, 893 - 39),
                 Title = "LearnOpenTK - Creating a Window",
                 // This is needed to run on macos
                 Flags = ContextFlags.ForwardCompatible,

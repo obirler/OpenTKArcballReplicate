@@ -24,13 +24,15 @@ namespace OpenTKArcballReplicate
 
             Logger.WriteLine($"constructing: width={_width}, height={_height}");
 
-            Vector3 dir = center - eye;
+            Vector3 origin = Vector3.Zero;
+
+            Vector3 dir = origin - eye;
             Vector3 z_axis = Vector3.Normalize(dir);
             Vector3 x_axis = Vector3.Normalize(Vector3.Cross(z_axis, up));
             Vector3 y_axis = Vector3.Normalize(Vector3.Cross(x_axis, z_axis));
             x_axis = Vector3.Normalize(Vector3.Cross(z_axis, y_axis));
 
-            center_translation = Matrix4.CreateTranslation(center).Inverted();
+            center_translation = Matrix4.CreateTranslation(origin).Inverted();
             Logger.WriteLine("center translation matrix");
             Logger.WriteLine(center_translation.ToString());
 
@@ -51,6 +53,8 @@ namespace OpenTKArcballReplicate
             set_projection(fov, aspect, near, far);
 
             update_camera();
+
+            move(-center);
         }
 
         private int _width;
@@ -78,9 +82,9 @@ namespace OpenTKArcballReplicate
 
         private float near = 0.1f;
 
-        private float far = 100.0f;
+        private float far = 400.0f;
 
-        private ProjectionMode _projectionMode = ProjectionMode.Orthogonal;
+        private ProjectionMode _projectionMode = ProjectionMode.Perspective;
 
         private float _ortho_scale = 5.0f;
 
@@ -99,7 +103,6 @@ namespace OpenTKArcballReplicate
                     proj = Matrix4.Transpose(Matrix4.CreateOrthographic(ortho_width, _ortho_scale, near, far));
                     break;
             }
-
             
             proj_inv = proj.Inverted();
         }
@@ -170,6 +173,7 @@ namespace OpenTKArcballReplicate
             update_camera();
         }
 
+        // Moves the object using mouse move in 2d viewport
         public void pan(Vector2 mouse_delta)
         {
             Logger.WriteLine($"panning: ({mouse_delta.X}, {mouse_delta.Y})");
@@ -187,6 +191,21 @@ namespace OpenTKArcballReplicate
             Logger.WriteLine(motion.ToString());
 
             Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(motion.Xyz));
+            Logger.WriteLine("motion_trans matrix");
+            Logger.WriteLine(motion_trans.ToString());
+
+            center_translation = motion_trans * center_translation;
+
+            Logger.WriteLine("center_translation matrix");
+            Logger.WriteLine(center_translation.ToString());
+
+            update_camera();
+        }
+
+        // Moves the object in the 3d space using translation vector
+        public void move(Vector3 delta)
+        {
+            Matrix4 motion_trans = Matrix4.Transpose(Matrix4.CreateTranslation(delta));
             Logger.WriteLine("motion_trans matrix");
             Logger.WriteLine(motion_trans.ToString());
 
